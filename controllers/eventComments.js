@@ -3,6 +3,7 @@ const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Event = require('../models/Event');
 const EventComment = require('../models/EventComment');
+const { start } = require('repl');
 
 /**
  * @DESC    Create event comment
@@ -32,13 +33,23 @@ exports.createEventComment = asyncHandler(async (req, res, next) => {
  * @ACCESS  PRIVATE
  */
 exports.getEventComments = asyncHandler(async (req, res, next) => {
+  const page = req.query.page;
+  const limit = 25;
+  const startIndex = (page - 1) * limit;
+  let pages =
+    (await EventComment.find({ event: req.params.id }).countDocuments()) /
+    limit;
+  pages = Math.ceil(pages);
   const comments = await EventComment.find({ event: req.params.id })
+    .sort('-createdAt')
+    .skip(startIndex)
+    .limit(limit)
     .select('-event -_id -id')
     .populate({
       path: 'user',
-      select: 'name lastName image',
     });
   res.json({
     comments,
+    pages,
   });
 });

@@ -10,27 +10,33 @@ const { saveImage } = require('../utils/FileUpload');
  * @ACCESS  Public
  */
 exports.register = asyncHandler(async (req, res, next) => {
-  const {
-    name,
-    lastName,
-    email,
-    description,
-    interestedIn,
-    password,
-  } = req.body;
+  const { firstName, lastName, email, password } = req.body;
   const user = await User.create({
-    name,
+    firstName,
     lastName,
     email,
-    description,
-    interestedIn,
     password,
   });
-  saveImage(req, user);
+  await saveImage(req, user);
   const token = user.getSignedJwtToken();
   user.token = token;
   await user.save();
+  user.password = undefined;
   res.json({ success: true, token, user });
+});
+
+/**
+ * @DESC    Update user profile
+ * @ROUTE   PUT /api/auth/profile
+ * @ACCESS  Private
+ */
+exports.updateProfile = asyncHandler(async (req, res, next) => {
+  const { description } = req.body;
+  const user = await User.findById(req.user.id);
+  user.description = description;
+  await saveImage(req, user);
+  await user.save();
+  res.json({ user });
 });
 
 /**
@@ -57,9 +63,3 @@ exports.login = asyncHandler(async (req, res, next) => {
   await user.save();
   res.json({ success: true, token, user });
 });
-
-/**
- * @DESC    Update user profile
- * @ROUTE   PUT /api/auth/me
- * @ACCESS  Public
- */

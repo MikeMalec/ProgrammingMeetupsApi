@@ -1,11 +1,15 @@
 const mongoose = require('mongoose');
 const moment = require('moment');
+const fs = require('fs');
+const path = require('path');
+const EventComment = require('./EventComment');
+const EventParticipant = require('./EventParticipant');
 
 const EventSchema = new mongoose.Schema(
   {
     organizer: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Organizer',
+      ref: 'MeetupUser',
       required: true,
     },
     latitude: {
@@ -15,6 +19,16 @@ const EventSchema = new mongoose.Schema(
     longitude: {
       type: Number,
       required: true,
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+      },
+      coordinates: {
+        type: [Number],
+        index: '2dsphere',
+      },
     },
     address: {
       type: String,
@@ -36,12 +50,16 @@ const EventSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      unique: true,
-      default: 'no-photo.jpg',
+      default: 'no-event-image.jpg',
+    },
+    icon: {
+      type: String,
+      defualt: null,
+      default: 'no-event-image.jpg',
     },
     createdAt: {
       type: Date,
-      default: moment().format(),
+      default: Date.now,
     },
   },
   {
@@ -50,15 +68,22 @@ const EventSchema = new mongoose.Schema(
   }
 );
 
-EventSchema.virtual('participants', {
-  ref: 'EventParticipant',
-  localField: '_id',
-  foreignField: 'event',
-  justOne: false,
+EventSchema.pre('remove', async function (next) {
+  fs.unlink(
+    path.join(__dirname, `../public/uploads/${this.image}`),
+    (err) => {}
+  );
+  fs.unlink(
+    path.join(__dirname, `../public/uploads/${this.icon}`),
+    (err) => {}
+  );
+  await EventParticipant.deleteMany({ event: this._id });
+  await EventComment.deleteMany({ event: this._id });
+  next();
 });
 
-EventSchema.virtual('rates', {
-  ref: 'EventRate',
+EventSchema.virtual('participants', {
+  ref: 'EventParticipant',
   localField: '_id',
   foreignField: 'event',
   justOne: false,

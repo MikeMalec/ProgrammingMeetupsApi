@@ -1,11 +1,10 @@
 const mongoose = require('mongoose');
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const UserSchema = new mongoose.Schema(
   {
-    name: {
+    firstName: {
       type: String,
       required: true,
       minlength: 3,
@@ -26,18 +25,15 @@ const UserSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      unique: true,
       default: 'no-photo.jpg',
     },
     description: {
       type: String,
-      required: true,
-      minlength: 10,
-      maxlength: 100,
+      default: '',
     },
     interestedIn: {
       type: [String],
-      required: true,
+      default: [],
     },
     password: {
       type: String,
@@ -78,4 +74,4 @@ UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('MeetupUser', UserSchema);
